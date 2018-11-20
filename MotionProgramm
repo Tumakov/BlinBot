@@ -1,0 +1,53 @@
+#define fromLow 0      // Нижняя граница потенциометра
+#define fromHigh 255   // Верхняя граница потенциометра
+#define toLow 1        // Нижняя граница шаговика
+#define toHigh 90       // Верхняя граница шаговика
+
+int in1 = 2;
+int in2 = 3;
+int in3 = 4;
+int in4 = 5;
+
+const int d = 4;
+
+int StepsOfRound = 511;
+int StepStatus[][4] = {{1, 1, 0, 0},{0, 1, 1, 0},{0, 0, 1, 1},{1, 0, 0, 1}};
+
+void PinSetup(){
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+}
+
+void Motion(int R){
+    int n;
+    if(R > 0){
+      n = -3;
+    }
+    else{
+      n = 0;
+    }
+    int value = map(abs(R), 0, 360, 0, StepsOfRound);
+    for(int i = 0; i < value; i++){
+      for (int k = n; k <= n+3; k++){
+        digitalWrite( in1, StepStatus[abs(k)][0] );
+        digitalWrite( in2, StepStatus[abs(k)][1] );
+        digitalWrite( in3, StepStatus[abs(k)][2] );
+        digitalWrite( in4, StepStatus[abs(k)][3] );
+        delay(d);
+      }
+    }
+}
+
+void setup() {
+  Serial.begin(9600);
+  PinSetup();
+}
+
+int rotation = -180;
+void loop() {
+  rotation *= -1;
+  Motion(rotation);
+  delay(2000);
+}
