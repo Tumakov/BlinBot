@@ -1,43 +1,43 @@
 #define fromLow 0      // Нижняя граница потенциометра
 #define fromHigh 255   // Верхняя граница потенциометра
 #define toLow 1        // Нижняя граница шаговика
-#define toHigh 90       // Верхняя граница шаговика
+#define toHigh 90      // Верхняя граница шаговика
+#define NumSteper 2      // Количество шаговиков
 
-int in1 = 2;
-int in2 = 3;
-int in3 = 4;
-int in4 = 5;
+int inS[NumSteper][4] = {{2, 3, 4, 5}, {6, 7, 8, 9}};
+int inGrad[NumSteper] = {11, 12};
+
+float Position[2][NumSteper];   // первая строчка - потенциометры  :  вторая строчка - шаговики
 
 const int d = 4;
 
 int StepsOfRound = 511;
-int StepStatus[][4] = {{1, 1, 0, 0},{0, 1, 1, 0},{0, 0, 1, 1},{1, 0, 0, 1}};
+int StepStatus[][4] = {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {1, 0, 0, 1}};
 
-void PinSetup(){
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-  pinMode(in3, OUTPUT);
-  pinMode(in4, OUTPUT);
+void PinSetup() {
+  for (int i = 0; i <= 1; i++) {
+    for (int j = 0; j <= 3; j++) {
+      pinMode(inS[i][j], OUTPUT);
+    }
+    pinMode(inGrad[i], INPUT);
+    Position[1][i] = 100;
+  }
 }
 
-void Motion(int R){
-    int n;
-    if(R > 0){
-      n = -3;
-    }
-    else{
-      n = 0;
-    }
-    int value = map(abs(R), 0, 360, 0, StepsOfRound);
-    for(int i = 0; i < value; i++){
-      for (int k = n; k <= n+3; k++){
-        digitalWrite( in1, StepStatus[abs(k)][0] );
-        digitalWrite( in2, StepStatus[abs(k)][1] );
-        digitalWrite( in3, StepStatus[abs(k)][2] );
-        digitalWrite( in4, StepStatus[abs(k)][3] );
-        delay(d);
+void Motion() {
+  for (int i = 0; i<=NumSteper; i++) Position[0][i] = map(analogRead(inGrad[i]), 0, 255, 0, 270);
+  
+  for (int S = 0; S <= 1; S++) {
+    int sign = (Position[0][S] - Position[1][S]) / abs(Position[0][S] - Position[1][S]);
+    int n = 1.5 * (sign - 1);
+    for (int k = n; k <= n + 3; k++) {
+      for (int j = 0; j <= 3; j++) {
+        digitalWrite( inS[S][j], StepStatus[abs(k)][j] );
       }
+      delay(d);
+      Position[1][S] = Position[1][S] + sign * 360 / StepsOfRound;
     }
+  }
 }
 
 void setup() {
@@ -46,8 +46,8 @@ void setup() {
 }
 
 int rotation = -180;
+
 void loop() {
-  rotation *= -1;
-  Motion(rotation);
-  delay(2000);
+  Motion();
+  delay(10);
 }
