@@ -2,32 +2,39 @@
 #define fromHigh 255   // Верхняя граница потенциометра
 #define toLow 1        // Нижняя граница шаговика
 #define toHigh 90      // Верхняя граница шаговика
-#define NumSteper 2      // Количество шаговиков
+#define StepsOfRound 511  //Шаги на 360 градусов (0-511)
+#define NumSteper 1      // Количество шаговиков
 
-int inS[NumSteper][4] = {{2, 3, 4, 5}, {6, 7, 8, 9}};
-int inGrad[NumSteper] = {11, 12};
+int inS[NumSteper][4] = {{2, 3, 4, 5}};
+int inGrad[NumSteper] = {A0};
+
+int startPosition[NumSteper] = {0};
 
 float Position[2][NumSteper];   // первая строчка - потенциометры  :  вторая строчка - шаговики
 
 const int d = 4;
 
-int StepsOfRound = 511;
 int StepStatus[][4] = {{1, 1, 0, 0}, {0, 1, 1, 0}, {0, 0, 1, 1}, {1, 0, 0, 1}};
 
 void PinSetup() {
-  for (int i = 0; i <= 1; i++) {
+  for (int i = 0; i <= NumSteper - 1; i++) {
     for (int j = 0; j <= 3; j++) {
       pinMode(inS[i][j], OUTPUT);
     }
     pinMode(inGrad[i], INPUT);
-    Position[1][i] = 100;
+    Position[1][i] = startPosition[i];
   }
 }
 
 void Motion() {
-  for (int i = 0; i<=NumSteper; i++) Position[0][i] = map(analogRead(inGrad[i]), 0, 255, 0, 270);
+  for (int i = 0; i<= NumSteper - 1; i++) {
+    Position[0][i] = 270 - map(analogRead(inGrad[i]), 0, 1023, 0, 270);
+    Serial.print(Position[0][i]);
+    Serial.print("   ");
+  }
   
-  for (int S = 0; S <= 1; S++) {
+  
+  for (int S = 0; S <= NumSteper - 1; S++) {
     int sign = (Position[0][S] - Position[1][S]) / abs(Position[0][S] - Position[1][S]);
     int n = 1.5 * (sign - 1);
     for (int k = n; k <= n + 3; k++) {
@@ -35,8 +42,10 @@ void Motion() {
         digitalWrite( inS[S][j], StepStatus[abs(k)][j] );
       }
       delay(d);
-      Position[1][S] = Position[1][S] + sign * 360 / StepsOfRound;
+     // Position[1][S] = Position[1][S] + sign * 0.703125;//360 / StepsOfRound;
     }
+    Position[1][S] = Position[1][S] + sign * 0.703125;
+    Serial.println(Position[1][S]);
   }
 }
 
